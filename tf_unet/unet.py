@@ -14,7 +14,6 @@
 
 '''
 Created on Jul 28, 2016
-
 author: jakeret
 '''
 from __future__ import print_function, division, absolute_import, unicode_literals
@@ -37,7 +36,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 def create_conv_net(x, keep_prob, channels, n_class, layers=3, features_root=16, filter_size=3, pool_size=2, Ngpu=1, maxpool=True,summaries=True):
     """
     Creates a new convolutional unet for the given parametrization.
-
     :param x: input tensor, shape [?,nx,ny,channels]
     :param keep_prob: dropout probability tensor
     :param channels: number of channels in the input image
@@ -73,84 +71,81 @@ def create_conv_net(x, keep_prob, channels, n_class, layers=3, features_root=16,
         gname='1'
     # down layers
     with tf.device('/gpu:0'):
-	    for layer in range(0, layers):
-		features = 2**layer*features_root
-		stddev = np.sqrt(2 / (filter_size**2 * features))
-		if layer == 0:
-		    w1 = weight_variable([filter_size, filter_size, channels, features], stddev)
-		else:
-		    w1 = weight_variable([filter_size, filter_size, features//2, features], stddev)
+        for layer in range(0, layers):
+            features = 2**layer*features_root
+            stddev = np.sqrt(2 / (filter_size**2 * features))
+            if layer == 0:
+                w1 = weight_variable([filter_size, filter_size, channels, features], stddev)
+            else:
+                w1 = weight_variable([filter_size, filter_size, features//2, features], stddev)
 
-		w2 = weight_variable([filter_size, filter_size, features, features], stddev)
-		b1 = bias_variable([features])
-		b2 = bias_variable([features])
+                w2 = weight_variable([filter_size, filter_size, features, features], stddev)
+                b1 = bias_variable([features])
+                b2 = bias_variable([features])
 
-		conv= conv2d(in_node, w1, keep_prob, padding)
+                conv= conv2d(in_node, w1, keep_prob, padding)
                 in_node = tf.nn.relu(conv + b1)
 
-		conv = conv2d(in_node, w2, keep_prob, padding)
+                conv = conv2d(in_node, w2, keep_prob, padding)
                 in_node = tf.nn.relu(conv + b2)
 
-		dw_h_convs[layer]=in_node
-		#dw_h_convs[layer] = tf.nn.relu(conv2 + b2)
+                dw_h_convs[layer]=in_node
+                #dw_h_convs[layer] = tf.nn.relu(conv2 + b2)
 
-		weights.append((w1, w2))
+                weights.append((w1, w2))
                 biases.append((b1, b2))
-		#convs.append((conv1, conv2))
+                #convs.append((conv1, conv2))
 
-		size -= 4
-		if layer < layers-1:
+                size -= 4
+                if layer < layers-1:
                     if maxpool:
                         in_node = max_pool(dw_h_convs[layer], pool_size)
                     else:
                         in_node = avg_pool(dw_h_convs[layer], pool_size)
 
-		    #pools[layer] = max_pool(dw_h_convs[layer], pool_size)
-		    #in_node = pools[layer]
-		    size /= 2
+                    #pools[layer] = max_pool(dw_h_convs[layer], pool_size)
+                    #in_node = pools[layer]
+                    size /= 2
 
-	    in_node = dw_h_convs[layers-1]
+        in_node = dw_h_convs[layers-1]
 
     with tf.device('/gpu:'+gname):
-	    # up layers
-	    for layer in range(layers-2, -1, -1):
-		features = 2**(layer+1)*features_root
-		stddev = np.sqrt(2 / (filter_size**2 * features))
+        # up layers
+        for layer in range(layers-2, -1, -1):
+            features = 2**(layer+1)*features_root
+            stddev = np.sqrt(2 / (filter_size**2 * features))
 
-		wd = weight_variable_devonc([pool_size, pool_size, features//2, features], stddev)
-		bd = bias_variable([features//2])
-                in_node= tf.nn.relu(deconv2d(in_node, wd, pool_size,padding) + bd)
+            wd = weight_variable_devonc([pool_size, pool_size, features//2, features], stddev)
+            bd = bias_variable([features//2])
+            in_node= tf.nn.relu(deconv2d(in_node, wd, pool_size,padding) + bd)
+            conv= crop_and_concat(dw_h_convs[layer], in_node)
 
-		conv= crop_and_concat(dw_h_convs[layer], in_node)
+            w1 = weight_variable([filter_size, filter_size, features, features//2], stddev)
+            w2 = weight_variable([filter_size, filter_size, features//2, features//2], stddev)
+            b1 = bias_variable([features//2])
+            b2 = bias_variable([features//2])
 
-		w1 = weight_variable([filter_size, filter_size, features, features//2], stddev)
-		w2 = weight_variable([filter_size, filter_size, features//2, features//2], stddev)
-		b1 = bias_variable([features//2])
-		b2 = bias_variable([features//2])
+            conv = conv2d(conv, w1, keep_prob, padding)
+            conv = tf.nn.relu(conv + b1)
 
-		conv = conv2d(conv, w1, keep_prob, padding)
-                conv = tf.nn.relu(conv + b1)
-
-		conv = conv2d(conv, w2, keep_prob, padding)
-                in_node = tf.nn.relu(conv + b2)
+            conv = conv2d(conv, w2, keep_prob, padding)
+            in_node = tf.nn.relu(conv + b2)
 
 
-		weights.append((w1, w2))
-		weights_d.append((wd))
-                biases.append((b1, b2))
-                biases_d.append((bd))
+            weights.append((w1, w2))
+            weights_d.append((wd))
+            biases.append((b1, b2))
+            biases_d.append((bd))
 
-		#convs.append((conv1, conv2))
+            #convs.append((conv1, conv2))
 
-		size *= 2
-		size -= 4
-
-	    #with tf.device('/gpu:1'):
-	    # Output Map
-	    weight = weight_variable([1, 1, features_root, n_class], stddev)
-	    bias = bias_variable([n_class])
-	    conv = conv2d(in_node, weight, tf.constant(1.0), padding)
-	    output_map = conv + bias + x_image  # tf.nn.relu(conv + bias)
+            size *= 2
+            size -= 4
+        # Output Map
+        weight = weight_variable([1, 1, features_root, n_class], stddev)
+        bias = bias_variable([n_class])
+        conv = conv2d(in_node, weight, tf.constant(1.0), padding)
+        output_map = conv + bias + x_image  # tf.nn.relu(conv + bias)
 
 #    if summaries:
         #tf.summary.image('summary_input', get_image_summary(x_image))
@@ -194,7 +189,6 @@ def create_conv_net(x, keep_prob, channels, n_class, layers=3, features_root=16,
 class Unet(object):
     """
     A unet implementation
-
     :param channels: (optional) number of channels in the input image
     :param n_class: (optional) number of output labels
     :param cost: (optional) name of the cost function. Default is 'cross_entropy'
@@ -234,49 +228,47 @@ class Unet(object):
         """
 
         with tf.device('/gpu:0'):
-		flat_logits = tf.reshape(logits, [-1, self.n_class])
-		flat_labels = tf.reshape(self.y, [-1, self.n_class])
-		if cost_name == "cross_entropy":
-		    class_weights = cost_kwargs.pop("class_weights", None)
+            flat_logits = tf.reshape(logits, [-1, self.n_class])
+            flat_labels = tf.reshape(self.y, [-1, self.n_class])
+            if cost_name == "cross_entropy":
+                class_weights = cost_kwargs.pop("class_weights", None)
 
-		    if class_weights is not None:
-			class_weights = tf.constant(np.array(class_weights, dtype=np.float32))
+                if class_weights is not None:
+                    class_weights = tf.constant(np.array(class_weights, dtype=np.float32))
 
-			weight_map = tf.multiply(flat_labels, class_weights)
-			weight_map = tf.reduce_sum(weight_map, axis=1)
+                    weight_map = tf.multiply(flat_labels, class_weights)
+                    weight_map = tf.reduce_sum(weight_map, axis=1)
 
-			loss_map = tf.nn.softmax_cross_entropy_with_logits(logits=flat_logits,
-									   labels=flat_labels)
-			weighted_loss = tf.multiply(loss_map, weight_map)
+                    loss_map = tf.nn.softmax_cross_entropy_with_logits(logits=flat_logits,
+                                               labels=flat_labels)
+                    weighted_loss = tf.multiply(loss_map, weight_map)
 
-			loss = tf.reduce_mean(weighted_loss)
+                    loss = tf.reduce_mean(weighted_loss)
+                else:
+                    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=flat_logits,
+                                                  labels=flat_labels))
+            elif cost_name == "dice_coefficient":
+                eps = 1e-5
+                prediction = pixel_wise_softmax_2(logits)
+                intersection = tf.reduce_sum(prediction * self.y)
+                union =  eps + tf.reduce_sum(prediction) + tf.reduce_sum(self.y)
+                loss = -(2 * intersection/ (union))
+            elif cost_name == "euclidean":
+                loss=100.0*tf.reduce_mean(tf.square(tf.abs(flat_logits-flat_labels)))
 
-		    else:
-			loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=flat_logits,
-										      labels=flat_labels))
-		elif cost_name == "dice_coefficient":
-		    eps = 1e-5
-		    prediction = pixel_wise_softmax_2(logits)
-		    intersection = tf.reduce_sum(prediction * self.y)
-		    union =  eps + tf.reduce_sum(prediction) + tf.reduce_sum(self.y)
-		    loss = -(2 * intersection/ (union))
-		elif cost_name == "euclidean":
-		    loss=100.0*tf.reduce_mean(tf.square(tf.abs(flat_logits-flat_labels)))
+            else:
+                raise ValueError("Unknown cost function: "%cost_name)
 
-		else:
-		    raise ValueError("Unknown cost function: "%cost_name)
-
-		regularizer = cost_kwargs.pop("regularizer", None)
-		if regularizer is not None:
-		    regularizers = sum([tf.nn.l2_loss(variable) for variable in self.variables])
-		    loss += (regularizer * regularizers)
+            regularizer = cost_kwargs.pop("regularizer", None)
+            if regularizer is not None:
+                regularizers = sum([tf.nn.l2_loss(variable) for variable in self.variables])
+                loss += (regularizer * regularizers)
 
         return loss
 
     def predict(self, model_path, x_test):
         """
         Uses the model to create a prediction for the given data
-
         :param model_path: path to the model checkpoint to restore
         :param x_test: Data to predict on. Shape [n, nx, ny, channels]
         :returns prediction: The unet prediction Shape [n, px, py, labels] (px=nx-self.offset/2)
@@ -298,7 +290,6 @@ class Unet(object):
     def save(self, sess, model_path):
         """
         Saves the current session to a checkpoint
-
         :param sess: current session
         :param model_path: path to file system location
         """
@@ -310,7 +301,6 @@ class Unet(object):
     def restore(self, sess, model_path):
         """
         Restores a session from a checkpoint
-
         :param sess: current session instance
         :param model_path: path to file system checkpoint location
         """
@@ -322,13 +312,11 @@ class Unet(object):
 class Trainer(object):
     """
     Trains a unet instance
-
     :param net: the unet instance to train
     :param batch_size: size of training batch
     :param norm_grads: (optional) true if normalized gradients should be added to the summaries
     :param optimizer: (optional) name of the optimizer to use (momentum or adam)
     :param opt_kwargs: (optional) kwargs passed to the learning rate (momentum opt) and to the optimizer
-
     """
 
     verification_batch_size = 1
@@ -409,7 +397,6 @@ class Trainer(object):
     def train(self, data_provider, data_provider_test, output_path, output_path_test, training_iters=10, epochs=100, display_step=1, restore=False, write_graph=False, prediction_path = 'prediction'):
         """
         Lauches the training process
-
         :param data_provider: callable returning training and verification data
         :param output_path: path where to store checkpoints
         :param training_iters: number of training mini batch iteration

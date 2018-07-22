@@ -44,3 +44,14 @@ You may find more details in main.py.
 
 ## Contact
 kyonghwan.jin@gmail.com
+
+Continue from:
+Overleaf-
+https://www.overleaf.com/17262924fkvbtvxhkxgq#/65727478/
+
+Papers:
+https://arxiv.org/abs/1611.03679
+https://arxiv.org/pdf/1806.08015.pdf
+
+Maybe check out another solution for deep learning:
+https://github.com/mughanibu/Deep-Learning-for-Inverse-Problems
