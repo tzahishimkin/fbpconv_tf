@@ -54,7 +54,8 @@ https://github.com/mughanibu/Deep-Learning-for-Inverse-Problems
 
 
 A different deep learning solution which seem good:
-https://github.com/sunyumark/ScaDec-deep-learning-diffractive-tomography
+https://github.com/tzahishimkin/ScaDec-deep-learning-diffractive-tomography
+
 
 paper:
 https://arxiv.org/abs/1803.06594
