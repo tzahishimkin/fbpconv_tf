@@ -41,19 +41,29 @@ python main.py --lr=1e-4 --output_path='logs/' --train_path='train_data/*.mat' -
 
 You may find more details in main.py.
 
+## Other papers, code and overleaf project
 
-## Contact
-kyonghwan.jin@gmail.com
-
-Continue from:
-Overleaf-
+Overleaf project
 https://www.overleaf.com/17262924fkvbtvxhkxgq#/65727478/
 
 Papers:
 https://arxiv.org/abs/1611.03679
 https://arxiv.org/pdf/1806.08015.pdf
 
-Maybe check out another solution for deep learning:
+Other solution for deep learning in Git:
+TF solution - Same architecture with U-Net:
 https://github.com/mughanibu/Deep-Learning-for-Inverse-Problems
 
+Another deep learning solution which seem good:
 https://github.com/sunyumark/ScaDec-deep-learning-diffractive-tomography
+paper:
+https://arxiv.org/abs/1803.06594
+Also these guys did some analysis on this solution:
+https://arxiv.org/pdf/1806.08015.pdf
+
+
+
+## Contact
+kyonghwan.jin@gmail.com
+
+
