@@ -46,18 +46,19 @@ You may find more details in main.py.
 Overleaf project
 https://www.overleaf.com/17262924fkvbtvxhkxgq#/65727478/
 
-Papers:
-https://arxiv.org/abs/1611.03679
-https://arxiv.org/pdf/1806.08015.pdf
+The paper for this inplementation is at: https://arxiv.org/abs/1611.03679
 
-Other solution for deep learning in Git:
-TF solution - Same architecture with U-Net:
+Implemention TF solution using architecture with U-Net.
+You can find another implementation of this article at:
 https://github.com/mughanibu/Deep-Learning-for-Inverse-Problems
 
-Another deep learning solution which seem good:
+
+A different deep learning solution which seem good:
 https://github.com/sunyumark/ScaDec-deep-learning-diffractive-tomography
+
 paper:
 https://arxiv.org/abs/1803.06594
+
 Also these guys did some analysis on this solution:
 https://arxiv.org/pdf/1806.08015.pdf
 
